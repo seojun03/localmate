@@ -54,23 +54,31 @@ document.addEventListener('DOMContentLoaded', () => {
 
                         try {
                             // 무료 Reverse Geocoding API 연동 (OSM Nominatim)
-                            const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${userLat}&lon=${userLon}`);
+                            const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${userLat}&lon=${userLon}&accept-language=ko`);
                             const data = await response.json();
+                            const addr = data.address;
 
-                            // 도시나 구 이름 가져오기
-                            const city = data.address.city || data.address.town || data.address.village || data.address.suburb || data.address.country || '알 수 없는 지역';
+                            // 동(neighbourhood) → 구(suburb/district) → 시(city) 순으로 최대한 깊게
+                            const dong = addr.neighbourhood || addr.quarter || addr.hamlet || '';
+                            const gu = addr.suburb || addr.city_district || addr.district || '';
+                            const city = addr.city || addr.town || addr.village || addr.county || addr.country || '알 수 없는 지역';
 
-                            // 상단 타이틀 영구 변경
+                            // 조합된 상세 주소 (예: 광주광역시 수완동)
+                            const detailAddr = [city, gu, dong].filter(v => v && v !== city).join(' ');
+                            const shortCity = city;
+
+                            // 상단 타이틀 영구 변경 (시 단위)
                             const titleEl = document.getElementById('ai-title');
                             if (titleEl) {
-                                titleEl.innerText = `로컬메이트 AI (${city})`;
+                                titleEl.innerText = `로컬메이트 AI (${shortCity})`;
                             }
 
                             // 성공적으로 위치를 가져왔을 때 로컬메이트의 답변
+                            const fullDisplay = detailAddr ? `${city} ${detailAddr.replace(city, '').trim()}` : city;
                             setTimeout(() => {
                                 const aiReply = `
                                     <strong>🧭 현재 위치 확인 완료!</strong><br>
-                                    현재 계신 곳은 <strong>'${city}'</strong> 근처시군요!<br>
+                                    현재 계신 곳은 <strong>${fullDisplay || city}</strong>에 계시군요!<br>
                                     이 위치를 기준으로 주변 카페나 맛집을 찾아드릴 수 있습니다. ☕️🍱
                                 `;
                                 appendMessage('ai', aiReply, true);
@@ -135,13 +143,17 @@ document.addEventListener('DOMContentLoaded', () => {
         if (text.includes('카페')) {
             const place = await findNearbyPlace('cafe');
             if (place) {
+                // 구글: 가게이름 + 좌표 근접 검색으로 정밀도 향상
+                const googleUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place.name)}&query_place_id=&center=${place.lat},${place.lon}`;
+                // 네이버: 좌표 기반 정확한 URL (좌표로 핀 꽂기)
+                const naverUrl = `https://map.naver.com/v5/search/${encodeURIComponent(place.name)}?c=${place.lon},${place.lat},17,0,0,0,dh`;
                 aiReply = `
                     현재 계신 곳 근처의 멋진 카페를 찾았습니다! ☕️<br>
                     <strong>"${place.name}"</strong><br><br>
-                    <a href="https://www.google.com/maps/search/?api=1&query=${place.lat},${place.lon}" target="_blank" class="action-btn map-btn">
+                    <a href="${googleUrl}" target="_blank" class="action-btn map-btn">
                         <i class="fa-solid fa-map-location-dot"></i> 구글 지도로 열기
                     </a>
-                    <a href="https://m.map.naver.com/search2/search.naver?query=${encodeURIComponent(place.name)}&lat=${place.lat}&lng=${place.lon}" target="_blank" class="action-btn map-btn" style="background: rgba(3, 199, 90, 0.1); color: #03c75a; border-color: rgba(3, 199, 90, 0.4);">
+                    <a href="${naverUrl}" target="_blank" class="action-btn map-btn" style="background: rgba(3, 199, 90, 0.1); color: #03c75a; border-color: rgba(3, 199, 90, 0.4);">
                         <i class="fa-solid fa-map-location-dot"></i> 네이버 지도로 열기
                     </a>
                 `;
@@ -153,13 +165,15 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (text.includes('맛집') || text.includes('식당') || text.includes('밥')) {
             const place = await findNearbyPlace('restaurant');
             if (place) {
+                const googleUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place.name)}&center=${place.lat},${place.lon}`;
+                const naverUrl = `https://map.naver.com/v5/search/${encodeURIComponent(place.name)}?c=${place.lon},${place.lat},17,0,0,0,dh`;
                 aiReply = `
                     숨겨진 현지 느낌의 식당을 하나 찾았습니다! 🍱<br>
                     <strong>"${place.name}"</strong><br><br>
-                    <a href="https://www.google.com/maps/search/?api=1&query=${place.lat},${place.lon}" target="_blank" class="action-btn map-btn">
+                    <a href="${googleUrl}" target="_blank" class="action-btn map-btn">
                         <i class="fa-solid fa-map-location-dot"></i> 구글 지도로 열기
                     </a>
-                    <a href="https://m.map.naver.com/search2/search.naver?query=${encodeURIComponent(place.name)}&lat=${place.lat}&lng=${place.lon}" target="_blank" class="action-btn map-btn" style="background: rgba(3, 199, 90, 0.1); color: #03c75a; border-color: rgba(3, 199, 90, 0.4);">
+                    <a href="${naverUrl}" target="_blank" class="action-btn map-btn" style="background: rgba(3, 199, 90, 0.1); color: #03c75a; border-color: rgba(3, 199, 90, 0.4);">
                         <i class="fa-solid fa-map-location-dot"></i> 네이버 지도로 열기
                     </a>
                 `;
