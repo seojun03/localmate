@@ -4,6 +4,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const sendBtn = document.querySelector('.send-btn');
     const locationBtn = document.getElementById('btn-location');
 
+    // Gemini API 설정
+    const GEMINI_API_KEY = 'gen-lang-client-0638971907';
+    const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
+
+
     function appendMessage(role, text, isHTML = false) {
         const msgDiv = document.createElement('div');
         msgDiv.classList.add('message', role);
@@ -194,13 +199,36 @@ document.addEventListener('DOMContentLoaded', () => {
                 </button>
             `;
         } else {
-            // 범용 대화
-            const genericResponses = [
-                `"${text}" — 흥미롭네요! 로컬메이트는 아직 배우는 중이라, '카페', '맛집', '번역'에 대해서는 기가 막히게 알려드릴 수 있어요! 🚀`,
-                `말씀해 주신 "${text}", 잘 들었습니다. 주변의 카페나 식당을 찾고 싶으시다면 언제든 물어보세요! 🕵️‍♂️`,
-                `아하! 맞아요. 그런데 지금 계신 곳 근처의 맛집이 궁금하시다면 언제든지 제게 '맛집'이라고 외쳐주세요! 🍱`
-            ];
-            aiReply = genericResponses[Math.floor(Math.random() * genericResponses.length)];
+            // 🧠 Gemini AI 실시간 대화
+            const locationContext = userLat
+                ? `사용자의 현재 위치: 위도 ${userLat.toFixed(4)}, 경도 ${userLon.toFixed(4)}.`
+                : '사용자의 위치는 아직 연결되지 않았습니다.';
+
+            const systemPrompt = `당신은 "로컬메이트 AI"입니다. 전 세계 여행자를 돕는 친절하고 유능한 현지 여행 가이드 AI입니다.
+${locationContext}
+위치 관련 질문에는 위의 좌표를 참고하세요. 짧고 핵심적으로 한국어로 답하세요. 마크다운은 사용하지 마세요.`;
+
+            try {
+                const response = await fetch(GEMINI_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [
+                            { role: 'user', parts: [{ text: systemPrompt + '\n\n사용자: ' + text }] }
+                        ]
+                    })
+                });
+                const data = await response.json();
+                if (data.candidates && data.candidates[0]) {
+                    aiReply = data.candidates[0].content.parts[0].text
+                        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                        .replace(/\n/g, '<br>');
+                } else {
+                    aiReply = '잠시 응답에 문제가 생겼습니다. 잠깐 뒤 다시 시도해주세요! 🙏';
+                }
+            } catch (e) {
+                aiReply = '인터넷 연결이 불안정합니다. 다시 시도해 주세요! 😅';
+            }
         }
 
         // 로딩 메시지를 실제 답변으로 교체
