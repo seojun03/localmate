@@ -106,8 +106,23 @@ document.addEventListener('DOMContentLoaded', () => {
                     </button>
                 `;
                 appendMessage('ai', voiceReply, true);
+            } else if (text.includes('맛집') || text.includes('식당') || text.includes('밥')) {
+                const foodReply = `
+                    숨겨진 현지인 찐맛집을 하나 찾았습니다! 🍣<br>
+                    <strong>"우오베이 스시 (Uobei Sushi)"</strong><br>
+                    ✅ 저렴한 가격 / 터치패널 주문(외국어 지원) / 회전초판<br><br>
+                    <a href="https://www.google.com/maps/search/?api=1&query=Uobei+Sushi" target="_blank" class="action-btn map-btn">
+                        <i class="fa-solid fa-map-location-dot"></i> 구글 지도로 바로 길찾기
+                    </a>
+                `;
+                appendMessage('ai', foodReply, true);
             } else {
-                appendMessage('ai', '로컬메이트 프리미엄 버전을 구독하시면 더 많은 실시간 데이터를 바탕으로 정확한 가이드를 받으실 수 있습니다! 🚀');
+                // 범용 답변 (무료 테스트용)
+                const genericReply = `
+                    보내주신 <strong>"${text}"</strong>에 대해 가장 빠르고 정확한 로컬 정보를 분석 중입니다... 🕵️‍♂️<br><br>
+                    (테스트 안내: 현재 데모 버전에서는 자유로운 대화가 가능하며 모든 데이터는 무료로 제공됩니다. <em>'카페 찾아줘', '맛집 알려줘', '감사합니다 일본어로 말해줘'</em>와 같이 상황에 맞는 키워드를 조합해보세요!)
+                `;
+                appendMessage('ai', genericReply, true);
             }
         }, 1000);
     }
@@ -120,7 +135,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Start Welcome Message
     setTimeout(() => {
         inputField.removeAttribute('disabled');
-        inputField.placeholder = "'카페 추천해줘', '일본어로 말해줘' 등을 입력해보세요!";
+        inputField.placeholder = "아무거나 자유롭게 질문해보세요!";
     }, 1000);
 
 });
