@@ -39,6 +39,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    let userLat = null;
+    let userLon = null;
+
     // 1. 내 위치 가져오기 (GPS)
     if (locationBtn) {
         locationBtn.addEventListener('click', () => {
@@ -46,12 +49,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 appendMessage('user', '📍 내 현재 위치 전송 중...');
                 navigator.geolocation.getCurrentPosition(
                     async (position) => {
-                        const lat = position.coords.latitude;
-                        const lon = position.coords.longitude;
+                        userLat = position.coords.latitude;
+                        userLon = position.coords.longitude;
 
                         try {
                             // 무료 Reverse Geocoding API 연동 (OSM Nominatim)
-                            const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
+                            const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${userLat}&lon=${userLon}`);
                             const data = await response.json();
 
                             // 도시나 구 이름 가져오기
@@ -67,15 +70,15 @@ document.addEventListener('DOMContentLoaded', () => {
                             setTimeout(() => {
                                 const aiReply = `
                                     <strong>🧭 현재 위치 확인 완료!</strong><br>
-                                    현재 계신 곳은 <strong>'${city}'</strong> 근처시군요! (위도: ${lat.toFixed(4)}, 경도: ${lon.toFixed(4)})<br><br>
-                                    이 위치를 기준으로 주변의 와이파이 빠른 조용한 카페나 맛집을 찾아드릴까요?
+                                    현재 계신 곳은 <strong>'${city}'</strong> 근처시군요!<br>
+                                    이 위치를 기준으로 주변 카페나 맛집을 찾아드릴 수 있습니다. ☕️🍱
                                 `;
                                 appendMessage('ai', aiReply, true);
                             }, 500);
 
                         } catch (error) {
                             setTimeout(() => {
-                                appendMessage('ai', `<strong>🧭 좌표 확인 완료!</strong><br>(위도: ${lat.toFixed(4)}, 경도: ${lon.toFixed(4)})<br>지역 이름을 불러오는 데 실패했지만, 좌표를 바탕으로 검색을 시작할 수 있습니다!`, true);
+                                appendMessage('ai', `<strong>🧭 좌표 확인 완료!</strong><br>위치 정보를 불러왔습니다. 무엇을 찾아드릴까요?`, true);
                             }, 500);
                         }
                     },
@@ -91,61 +94,111 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // 진짜 주변 장소 찾는 함수 (OpenStreetMap Overpass API)
+    async function findNearbyPlace(type) {
+        if (!userLat || !userLon) return null;
+
+        let nodeType = type === 'cafe' ? 'cafe' : 'restaurant';
+        // 반경 1km 이내의 카페나 식당 한 개만 가져오기
+        const query = `[out:json];node(around:1000,${userLat},${userLon})[amenity=${nodeType}];out 1;`;
+        try {
+            const res = await fetch(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`);
+            const data = await res.json();
+            if (data.elements && data.elements.length > 0) {
+                const place = data.elements[0];
+                const placeName = place.tags.name || (type === 'cafe' ? '이름 없는 숨은 동네 카페' : '이름 없는 숨은 현지 식당');
+                return { name: placeName, lat: place.lat, lon: place.lon };
+            }
+        } catch (e) {
+            console.error(e);
+        }
+        return null;
+    }
+
     // Handle Manual Input
-    function handleUserInput() {
+    async function handleUserInput() {
         const text = inputField.value.trim();
         if (text === '') return;
 
         appendMessage('user', text);
         inputField.value = '';
 
-        // 사용자의 입력에 따른 간단한 키워드 매칭 반응
-        setTimeout(() => {
-            if (text.includes('카페')) {
-                const cafeReply = `
-                    지금 위치 근처 최고의 카페를 찾았습니다! ☕️<br>
-                    <strong>"Streamer Coffee Company"</strong><br>
-                    ✅ 기가 와이파이 / 콘센트 넉넉함<br><br>
-                    <a href="https://www.google.com/maps/search/?api=1&query=Streamer+Coffee+Company" target="_blank" class="action-btn map-btn">
-                        <i class="fa-solid fa-map-location-dot"></i> 구글 지도로 바로 길찾기
+        inputField.setAttribute('disabled', 'true');
+        appendMessage('ai', `<i class="fa-solid fa-circle-notch fa-spin"></i> 실시간 정보 검색 중...`, true);
+
+        const chatBoxDivs = chatBox.querySelectorAll('.message.ai');
+        const loadingMsg = chatBoxDivs[chatBoxDivs.length - 1];
+
+        // 대답 준비
+        let aiReply = '';
+
+        if (text.includes('카페')) {
+            const place = await findNearbyPlace('cafe');
+            if (place) {
+                aiReply = `
+                    현재 계신 곳 근처의 멋진 카페를 찾았습니다! ☕️<br>
+                    <strong>"${place.name}"</strong><br><br>
+                    <a href="https://www.google.com/maps/search/?api=1&query=${place.lat},${place.lon}" target="_blank" class="action-btn map-btn">
+                        <i class="fa-solid fa-map-location-dot"></i> 구글 지도로 열기
+                    </a>
+                    <a href="https://m.map.naver.com/search2/search.naver?query=${encodeURIComponent(place.name)}&lat=${place.lat}&lng=${place.lon}" target="_blank" class="action-btn map-btn" style="background: rgba(3, 199, 90, 0.1); color: #03c75a; border-color: rgba(3, 199, 90, 0.4);">
+                        <i class="fa-solid fa-map-location-dot"></i> 네이버 지도로 열기
                     </a>
                 `;
-                appendMessage('ai', cafeReply, true);
-            } else if (text.includes('일본어') || text.includes('말해')) {
-                const jpnText = "에고오 하나세루 스타후와 이마스카?";
-                const jpnReal = "英語を話せるスタッフはいますか？";
-                const voiceReply = `
-                    점원에게 이렇게 말씀해 보세요! 🗣️<br><br>
-                    <strong>"${jpnReal}"</strong><br>
-                    (${jpnText})<br><br>
-                    직접 말하기 부담스러우시다면 아래 버튼을 눌러주세요. 제가 대신 현지인 발음으로 말해드릴게요!<br><br>
-                    <button class="action-btn voice-btn" onclick="speakText('${jpnReal}', 'ja-JP')">
-                        <i class="fa-solid fa-volume-high"></i> 일본어로 말하기
-                    </button>
-                    <button class="action-btn voice-btn" onclick="speakText('Is there any English-speaking staff here?', 'en-US')">
-                        <i class="fa-solid fa-volume-high"></i> 영어로 말하기
-                    </button>
-                `;
-                appendMessage('ai', voiceReply, true);
-            } else if (text.includes('맛집') || text.includes('식당') || text.includes('밥')) {
-                const foodReply = `
-                    숨겨진 현지인 찐맛집을 하나 찾았습니다! 🍣<br>
-                    <strong>"우오베이 스시 (Uobei Sushi)"</strong><br>
-                    ✅ 저렴한 가격 / 터치패널 주문(외국어 지원) / 회전초판<br><br>
-                    <a href="https://www.google.com/maps/search/?api=1&query=Uobei+Sushi" target="_blank" class="action-btn map-btn">
-                        <i class="fa-solid fa-map-location-dot"></i> 구글 지도로 바로 길찾기
-                    </a>
-                `;
-                appendMessage('ai', foodReply, true);
+            } else if (!userLat) {
+                aiReply = `주변 카페를 찾으려면 먼저 입력창 왼쪽의 📍<strong>위치 전송 버튼</strong>을 눌러주세요!`;
             } else {
-                // 범용 답변 (무료 테스트용)
-                const genericReply = `
-                    보내주신 <strong>"${text}"</strong>에 대해 가장 빠르고 정확한 로컬 정보를 분석 중입니다... 🕵️‍♂️<br><br>
-                    (테스트 안내: 현재 데모 버전에서는 자유로운 대화가 가능하며 모든 데이터는 무료로 제공됩니다. <em>'카페 찾아줘', '맛집 알려줘', '감사합니다 일본어로 말해줘'</em>와 같이 상황에 맞는 키워드를 조합해보세요!)
-                `;
-                appendMessage('ai', genericReply, true);
+                aiReply = `반경 1km 내에서 지도에 등록된 카페를 찾지 못했습니다. 😢 주변 이동 후 다시 시도해보세요.`;
             }
-        }, 1000);
+        } else if (text.includes('맛집') || text.includes('식당') || text.includes('밥')) {
+            const place = await findNearbyPlace('restaurant');
+            if (place) {
+                aiReply = `
+                    숨겨진 현지 느낌의 식당을 하나 찾았습니다! 🍱<br>
+                    <strong>"${place.name}"</strong><br><br>
+                    <a href="https://www.google.com/maps/search/?api=1&query=${place.lat},${place.lon}" target="_blank" class="action-btn map-btn">
+                        <i class="fa-solid fa-map-location-dot"></i> 구글 지도로 열기
+                    </a>
+                    <a href="https://m.map.naver.com/search2/search.naver?query=${encodeURIComponent(place.name)}&lat=${place.lat}&lng=${place.lon}" target="_blank" class="action-btn map-btn" style="background: rgba(3, 199, 90, 0.1); color: #03c75a; border-color: rgba(3, 199, 90, 0.4);">
+                        <i class="fa-solid fa-map-location-dot"></i> 네이버 지도로 열기
+                    </a>
+                `;
+            } else if (!userLat) {
+                aiReply = `맛집을 추천해 드리려면, 먼저 입력창 왼쪽의 📍<strong>위치 전송 버튼</strong>을 눌러주세요!`;
+            } else {
+                aiReply = `반경 1km 내에서 지도에 등록된 식당을 찾지 못했습니다. 😢`;
+            }
+        } else if (text.includes('일본어') || text.includes('말해')) {
+            const jpnText = "에고오 하나세루 스타후와 이마스카?";
+            const jpnReal = "英語を話せるスタッフはいますか？";
+            aiReply = `
+                상황에 맞게 이렇게 말씀해 보세요! 🗣️<br>
+                <strong>"${jpnReal}"</strong><br>
+                (${jpnText})<br><br>
+                <button class="action-btn voice-btn" onclick="speakText('${jpnReal}', 'ja-JP')">
+                    <i class="fa-solid fa-volume-high"></i> 일본어로 말하기
+                </button>
+            `;
+        } else {
+            // 범용 대화
+            const genericResponses = [
+                `"${text}" — 흥미롭네요! 로컬메이트는 아직 배우는 중이라, '카페', '맛집', '번역'에 대해서는 기가 막히게 알려드릴 수 있어요! 🚀`,
+                `말씀해 주신 "${text}", 잘 들었습니다. 주변의 카페나 식당을 찾고 싶으시다면 언제든 물어보세요! 🕵️‍♂️`,
+                `아하! 맞아요. 그런데 지금 계신 곳 근처의 맛집이 궁금하시다면 언제든지 제게 '맛집'이라고 외쳐주세요! 🍱`
+            ];
+            aiReply = genericResponses[Math.floor(Math.random() * genericResponses.length)];
+        }
+
+        // 로딩 메시지를 실제 답변으로 교체
+        setTimeout(() => {
+            loadingMsg.innerHTML = `
+                <div class="bubble">${aiReply}</div>
+                <span class="time">${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+            `;
+            inputField.removeAttribute('disabled');
+            chatBox.scrollTop = chatBox.scrollHeight;
+            inputField.focus();
+        }, 800);
     }
 
     sendBtn.addEventListener('click', handleUserInput);
