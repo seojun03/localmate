@@ -107,19 +107,41 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // 이미 보여준 장소 기억 (중복 방지)
+    const shownPlaces = { cafe: new Set(), restaurant: new Set() };
+
     // 진짜 주변 장소 찾는 함수 (OpenStreetMap Overpass API)
     async function findNearbyPlace(type) {
         if (!userLat || !userLon) return null;
 
-        let nodeType = type === 'cafe' ? 'cafe' : 'restaurant';
-        // 반경 1km 이내의 카페나 식당 한 개만 가져오기
-        const query = `[out:json];node(around:1000,${userLat},${userLon})[amenity=${nodeType}];out 1;`;
+        const nodeType = type === 'cafe' ? 'cafe' : 'restaurant';
+        // 반경 1.5km 이내 최대 20개 가져오기 (다양한 추천을 위해!)
+        const query = `[out:json];node(around:1500,${userLat},${userLon})[amenity=${nodeType}][name];out 20;`;
         try {
             const res = await fetch(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`);
             const data = await res.json();
             if (data.elements && data.elements.length > 0) {
-                const place = data.elements[0];
-                const placeName = place.tags.name || (type === 'cafe' ? '이름 없는 숨은 동네 카페' : '이름 없는 숨은 현지 식당');
+                // 이름 있는 가게만 필터링
+                const namedPlaces = data.elements.filter(p => p.tags && p.tags.name);
+                // 아직 보여주지 않은 곳만 추려내기
+                const unseenPlaces = namedPlaces.filter(p => !shownPlaces[type].has(p.tags.name));
+
+                // 모두 다 보여줬으면 기억 초기화 후 다시 섞기
+                if (unseenPlaces.length === 0 && namedPlaces.length > 0) {
+                    shownPlaces[type].clear();
+                    unseenPlaces.push(...namedPlaces);
+                }
+
+                if (unseenPlaces.length === 0) return null;
+
+                // 랜덤으로 하나 선택
+                const randomIndex = Math.floor(Math.random() * unseenPlaces.length);
+                const place = unseenPlaces[randomIndex];
+                const placeName = place.tags.name;
+
+                // 이번에 보여준 곳 기록
+                shownPlaces[type].add(placeName);
+
                 return { name: placeName, lat: place.lat, lon: place.lon };
             }
         } catch (e) {
