@@ -67,7 +67,7 @@
               <img src="https://api.dicebear.com/9.x/bottts/svg?seed=Felix&backgroundColor=4b4efc" alt="AI Agent">
             </div>
             <div class="info">
-              <h3>로컬메이트 AI (도쿄)</h3>
+              <h3 id="ai-title">로컬메이트 AI (미연결)</h3>
               <span class="status"><span class="dot"></span>온라인</span>
             </div>
             <div class="actions">
@@ -76,9 +76,9 @@
           </div>
 
           <div class="chat-body" id="chat-box">
-            <div class="message ai">
-              <div class="bubble">안녕하세요! 오늘 도쿄 날씨는 맑음입니다 ☀️ 무엇을 도와드릴까요?</div>
-              <span class="time">10:00 AM</span>
+            <div class="message ai" id="welcome-msg">
+              <div class="bubble">안녕하세요! 정확한 정보를 위해 하단의 <strong>📍버튼</strong>을 눌러 현재 위치를 먼저 연결해 주세요! 🗺️</div>
+              <span class="time">Now</span>
             </div>
             <!-- Messages will be injected by JS -->
           </div>

@@ -45,18 +45,39 @@ document.addEventListener('DOMContentLoaded', () => {
             if (navigator.geolocation) {
                 appendMessage('user', '📍 내 현재 위치 전송 중...');
                 navigator.geolocation.getCurrentPosition(
-                    (position) => {
+                    async (position) => {
                         const lat = position.coords.latitude;
                         const lon = position.coords.longitude;
-                        // 성공적으로 위치를 가져왔을 때 로컬메이트의 답변
-                        setTimeout(() => {
-                            const aiReply = `
-                                <strong>🧭 현재 위치 확인 완료!</strong><br>
-                                위도: ${lat.toFixed(4)}, 경도: ${lon.toFixed(4)}<br><br>
-                                이 위치(반경 500m) 주변의 와이파이 빠른 조용한 카페를 찾아드릴까요?
-                            `;
-                            appendMessage('ai', aiReply, true);
-                        }, 1000);
+
+                        try {
+                            // 무료 Reverse Geocoding API 연동 (OSM Nominatim)
+                            const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
+                            const data = await response.json();
+
+                            // 도시나 구 이름 가져오기
+                            const city = data.address.city || data.address.town || data.address.village || data.address.suburb || data.address.country || '알 수 없는 지역';
+
+                            // 상단 타이틀 영구 변경
+                            const titleEl = document.getElementById('ai-title');
+                            if (titleEl) {
+                                titleEl.innerText = `로컬메이트 AI (${city})`;
+                            }
+
+                            // 성공적으로 위치를 가져왔을 때 로컬메이트의 답변
+                            setTimeout(() => {
+                                const aiReply = `
+                                    <strong>🧭 현재 위치 확인 완료!</strong><br>
+                                    현재 계신 곳은 <strong>'${city}'</strong> 근처시군요! (위도: ${lat.toFixed(4)}, 경도: ${lon.toFixed(4)})<br><br>
+                                    이 위치를 기준으로 주변의 와이파이 빠른 조용한 카페나 맛집을 찾아드릴까요?
+                                `;
+                                appendMessage('ai', aiReply, true);
+                            }, 500);
+
+                        } catch (error) {
+                            setTimeout(() => {
+                                appendMessage('ai', `<strong>🧭 좌표 확인 완료!</strong><br>(위도: ${lat.toFixed(4)}, 경도: ${lon.toFixed(4)})<br>지역 이름을 불러오는 데 실패했지만, 좌표를 바탕으로 검색을 시작할 수 있습니다!`, true);
+                            }, 500);
+                        }
                     },
                     (error) => {
                         setTimeout(() => {
