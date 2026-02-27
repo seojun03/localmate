@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>로컬메이트 AI - 나만의 텔레그램 여행 가이드</title>
+  <meta name="description" content="앱 설치 없이 메신저에서 바로 만나는 똑똑한 현지 AI 가이드. 숨겨진 맛집부터 실시간 번역까지.">
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Pretendard:wght@300;400;600;800&display=swap"
+    rel="stylesheet">
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="style.css">
+
+  <!-- Font Awesome (Icons) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+
+  <div class="background-glow">
+    <div class="glow-orb orb-1"></div>
+    <div class="glow-orb orb-2"></div>
+  </div>
+
+  <!-- Header -->
+  <header>
+    <div class="logo">
+      <i class="fa-solid fa-plane-departure"></i>
+      <span>LocalMate AI</span>
+    </div>
+    <nav>
+      <a href="#features">기능</a>
+      <a href="#pricing">요금제</a>
+      <a href="#demo" class="btn-primary">무료 체험하기</a>
+    </nav>
+  </header>
+
+  <!-- Main Hero Section -->
+  <main>
+    <section class="hero">
+      <div class="hero-content">
+        <span class="badge">🚀 앱 설치 절대 필요 없음</span>
+        <h1>낯선 도시의 완벽한 가이드,<br><span class="gradient-text">이제 메신저에서 만나세요.</span></h1>
+        <p>구글 지도에도 없는 진짜 로컬 핫플, 실시간 번역, 긴급 상황 대처까지.<br>텔레그램과 카카오톡에서 AI 여행 파트너 '로컬메이트'를 불러보세요.</p>
+        <div class="cta-group">
+          <button class="btn-primary large"><i class="fa-brands fa-telegram"></i> 텔레그램으로 시작</button>
+          <button class="btn-secondary large"><i class="fa-solid fa-comment"></i> 카카오톡으로 시작</button>
+        </div>
+        <div class="trust-indicators">
+          <span><i class="fa-solid fa-star"></i> 4.9/5 별점</span>
+          <span><i class="fa-solid fa-users"></i> 10,000+ 명의 여행자</span>
+          <span><i class="fa-solid fa-globe"></i> 150+ 국가 지원</span>
+        </div>
+      </div>
+
+      <!-- Chat Mockup (Glassmorphism) -->
+      <div class="hero-mockup" id="demo">
+        <div class="chat-container glass-panel">
+          <div class="chat-header">
+            <div class="avatar">
+              <img src="https://api.dicebear.com/9.x/bottts/svg?seed=Felix&backgroundColor=4b4efc" alt="AI Agent">
+            </div>
+            <div class="info">
+              <h3>로컬메이트 AI (도쿄)</h3>
+              <span class="status"><span class="dot"></span>온라인</span>
+            </div>
+            <div class="actions">
+              <i class="fa-solid fa-ellipsis-vertical"></i>
+            </div>
+          </div>
+
+          <div class="chat-body" id="chat-box">
+            <div class="message ai">
+              <div class="bubble">안녕하세요! 오늘 도쿄 날씨는 맑음입니다 ☀️ 무엇을 도와드릴까요?</div>
+              <span class="time">10:00 AM</span>
+            </div>
+            <!-- Messages will be injected by JS -->
+          </div>
+
+          <div class="chat-footer">
+            <div class="input-area">
+              <i class="fa-solid fa-paperclip icon-btn"></i>
+              <input type="text" placeholder="메시지를 입력하세요..." disabled>
+              <button class="send-btn"><i class="fa-solid fa-paper-plane"></i></button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section class="pricing" id="pricing">
+      <h2 class="section-title">여행 기간에 맞춘 <span class="gradient-text">합리적인 요금</span></h2>
+      <div class="pricing-cards">
+
+        <div class="card glass-panel">
+          <div class="card-header">출장 패스 (3일)</div>
+          <div class="price">₩4,900</div>
+          <ul class="features">
+            <li><i class="fa-solid fa-check"></i> 실시간 로컬 핫플 추천</li>
+            <li><i class="fa-solid fa-check"></i> 로컬 메뉴판 사진 번역</li>
+            <li><i class="fa-solid fa-check"></i> 교통수단 최적 경로 안내</li>
+          </ul>
+          <button class="btn-outline">결제하기</button>
+        </div>
+
+        <div class="card glass-panel popular">
+          <div class="popular-badge">가장 인기</div>
+          <div class="card-header">여행자 패스 (7일)</div>
+          <div class="price">₩9,900</div>
+          <ul class="features">
+            <li><i class="fa-solid fa-check"></i> 출장 패스의 모든 기능</li>
+            <li><i class="fa-solid fa-check"></i> 음성 지원 (현지어 대신 말해주기)</li>
+            <li><i class="fa-solid fa-check"></i> 맞춤형 일일 투어 코스 짜기</li>
+          </ul>
+          <button class="btn-primary">결제하기</button>
+        </div>
+
+        <div class="card glass-panel">
+          <div class="card-header">노마드 패스 (30일)</div>
+          <div class="price">₩29,900</div>
+          <ul class="features">
+            <li><i class="fa-solid fa-check"></i> 여행자 패스의 모든 기능</li>
+            <li><i class="fa-solid fa-check"></i> 워케이션 추천 (빠른 와이파이 카페)</li>
+            <li><i class="fa-solid fa-check"></i> 비즈니스 통역 지원 모드</li>
+          </ul>
+          <button class="btn-outline">결제하기</button>
+        </div>
+
+      </div>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+
+</html>
